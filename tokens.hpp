@@ -3,6 +3,7 @@
 #include <cstdlib>
   enum tokentype
   {
+    ERROR = 0,
     VOID = 1,
     INT = 2,
     BYTE = 3,
