@@ -13,7 +13,7 @@ whitespace      ([\t\r\n ])
 digit           ([0-9])
 letter          ([a-zA-Z])
 hex_digit       ([0-9A-Fa-f])
-string_chars    ([^\\\"\n\r]|(\\\\)|(\\\")|(\\n)|(\\r)|(\\t)|(\\0)|(\\x{hex_digit}{hex_digit}))
+string_chars    ([^\\\"\n\r]|(\\\\)|(\\\")|(\\n)|(\\r)|(\\t)|(\\0)|(\\x[0-7]{hex_digit}))
 
 
 %x IN_STRING
@@ -23,6 +23,7 @@ string_chars    ([^\\\"\n\r]|(\\\\)|(\\\")|(\\n)|(\\r)|(\\t)|(\\0)|(\\x{hex_digi
 void                            return VOID;
 int                             return INT;
 byte                            return BYTE;
+b                               return B;
 bool                            return BOOL;
 override                        return OVERRIDE;
 and                             return AND;
@@ -50,16 +51,20 @@ continue                        return CONTINUE ;
 0|([1-9]{digit}*)               {/* BEGIN(RIGHT_PAST_NUM); */return NUM; }
 {whitespace}+                   ;
 \"                              { BEGIN(IN_STRING); }
-.                               { fprintf(stderr, "Error %c\n", *yytext); exit(0); }
+.                               { return ERROR; exit(0); }
 
 
-<IN_STRING>{string_chars}*      { return STRING; }
-<IN_STRING>\"                   { BEGIN(INITIAL); }
-<IN_STRING>[\n\r]+              { fprintf(stderr, "Error unclosed string\n"); exit(0); }
-<IN_STRING>\\x[^\"]\"           { fprintf(stderr, "Error undefined escape sequence x%c\n", yytext[2]); exit(0); }
-<IN_STRING>\\x[^\"][^\"]        { fprintf(stderr, "Error undefined escape sequence x%c%c\n", yytext[2], yytext[3]); exit(0); }
-<IN_STRING>\\.                  { fprintf(stderr, "here!Error undefined escape sequence %c\n", yytext[1]); exit(0); }
 
+<IN_STRING>({string_chars}|{letter})*    { return STRING;}
+<IN_STRING>\"                    {BEGIN(INITIAL);}
+<IN_STRING>({string_chars}|{letter})*[\n\r]+              { return UNCLOSED_STR; }
+<IN_STRING>\\x[^\"]\"           { return ESCAPE; }
+<IN_STRING>\\x[^\"][^\"]        { return ESCAPE;   }
+<IN_STRING>({string_chars}|{letter})*\\[^rnt]             {return ESCAPE; }
+<IN_STRING>({string_chars}|{letter})*\\x(([^0-7][hex_digit])|([0-7][^hex_digit])|([^0-7][^hex_digit])) {return ESCAPE;}
+
+
+<IN_STRING>\\.                  { return ERROR; }
 
 
 
@@ -67,5 +72,7 @@ continue                        return CONTINUE ;
 <RIGHT_PAST_NUM>{whitespace}+   BEGIN(INITIAL); /// need test */
 
 %%
+
+
 
 
