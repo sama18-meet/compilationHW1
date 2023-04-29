@@ -213,7 +213,7 @@ std::string findEscapedString(const std::string& str){
    for(int i=0;i<str.length()-1;i++)
    {
     if(str[i]=='\\'&&(str[i+1]!='r')&&(str[i+1]!='n')&&(str[i+1]!='t'))
-    { return_string=str.substr(i+1,str.length()-i-1);
+    { return_string=str.substr(i+1,str.length()-i-2);
     if(str[str.length()-1]!='"')
     {
         return_string[str.length()-i]=str[str.length()-1];
