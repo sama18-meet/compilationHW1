@@ -1,13 +1,15 @@
 #include "tokens.hpp"
 #include <fstream>
 #include <iostream>
+
+#define MAX_STRING_LENGTH
+
 using std::cout;
 using std::endl;
 
 std::string tokenName(enum tokentype token);
-void findAndReplace(std::string& str, const std::string& find, const std::string& replace);
-void fixASCIIEscapeSeq(std::string& str);
 std::string findEscapedString(const std::string& str);
+int replaceEscape(std::string& str);
 
 int main()
 {
@@ -63,14 +65,6 @@ else if(str.find('!') != std::string::npos)
           
      { cout<<"'"<<"\n";}  
 
-     // else if(str.find(CR) != std::string::npos)
-          
-     //{ cout<<"CR"<<"\n";}  
-
-     //else if(str.find(LF) != std::string::npos)
-          
-     //{ cout<<"LF"<<"\n";}  
-
      else if(str.find('@') != std::string::npos)
           
      { cout<<"@"<<"\n";}  
@@ -86,19 +80,6 @@ else if(str.find('!') != std::string::npos)
   else if(str.find('?') != std::string::npos)
           
      { cout<<"?"<<"\n";}  
-
-
-
-
-          
-          
-          
-          
-          
-          
-          
-          
-          
             exit(0);
 
         }
@@ -114,15 +95,9 @@ else if(str.find('!') != std::string::npos)
      
         else if (token == STRING) {
             std::string str(yytext);
-            findAndReplace(str, "\\n", "\n");
-            findAndReplace(str, "\\r", "\r");
-            findAndReplace(str, "\\t", "\t");
-            findAndReplace(str, "\\\\", "\\");
-            findAndReplace(str, "\\\"", "\"");
-            fixASCIIEscapeSeq(str);
-
-
-            cout << str;
+            str = str.substr(0, str.length()-1);
+            int len = replaceEscape(str);
+            cout << str.substr(0, len);
         }
         else {
             cout << yytext;
@@ -210,34 +185,62 @@ std::string findEscapedString(const std::string& str){
     
     std::string return_string="";
 
-   for(int i=0;i<str.length()-1;i++)
-   {
-    if(str[i]=='\\'&&(str[i+1]!='r')&&(str[i+1]!='n')&&(str[i+1]!='t'))
-    { return_string=str.substr(i+1,str.length()-i-2);
-    if(str[str.length()-1]!='"')
-    {
-        return_string[str.length()-i]=str[str.length()-1];
-    }
-    return return_string;}
+    for(int i=0;i<str.length()-1;i++) {
+        if(str[i]=='\\'&&(str[i+1]!='r')&&(str[i+1]!='n')&&(str[i+1]!='t'))
+        {
+            int len;
+            if (str[i+1] == 'x') {
+                if (str[i+3] == '"') {
+                    len = 2;
+                } else {
+                    len = 3;
+                }
+            } else {
+                len = 1;
+            }
+            return_string=str.substr(i+1,len);
+            return return_string;
+        }
    }
    return return_string;
+}
 
-}
-void findAndReplace(std::string& str, const std::string& find, const std::string& replace) {
+int replaceEscape(std::string& str) {
     size_t pos = 0;
-    while ((pos = str.find(find, pos)) != std::string::npos) {
-         str.replace(pos, find.length(), replace);
-         pos += replace.length();
-        
+    while ((pos = str.find("\\", pos)) != std::string::npos) {
+        if (str[pos+1] == '0') {
+            return pos;
+        }
+        else if (str[pos+1] == 'n') {
+            str.replace(pos, 2, "\n");
+            pos+=1;
+        }
+        else if (str[pos+1] == 'r') {
+            str.replace(pos, 2, "\r");
+            pos+=1;
+        }
+        else if (str[pos+1] == 't') {
+            str.replace(pos, 2, "\t");
+            pos+=1;
+        }
+        else if (str[pos+1] == '\"') {
+            str.replace(pos, 2, "\"");
+            pos+=1;
+        }
+        else if (str[pos+1] == '\\') {
+            str.replace(pos, 2, "\\");
+            pos+=1;
+        }
+        else if (str[pos+1] == 'x') {
+            std::string hexval = str.substr(pos+2, 2);
+            if (hexval == "00") { return pos; }
+            int c_numerical_val = (int)std::stoul(hexval, nullptr, 16);
+            char c[2] = {(char)c_numerical_val, '\0'};
+            str.replace(pos, 4, c);
+            pos++;
+        }
+
     }
+    return str.length();
 }
-void fixASCIIEscapeSeq(std::string& str) {
-    size_t pos = 0;
-    while ((pos = str.find("\\x", pos)) != std::string::npos) {
-        std::string hexval = str.substr(pos+2, pos+4);
-        int c_numerical_val = (int)std::stoul(hexval, nullptr, 16);
-        char c[2] = {(char)c_numerical_val, '\0'};
-        str.replace(pos, 4, c);
-        pos++;
-    }
-}
+

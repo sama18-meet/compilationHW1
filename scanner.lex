@@ -45,26 +45,21 @@ continue                        return CONTINUE ;
 \}                              return RBRACE; // might need care
 =                               return ASSIGN;
 ==|!=|<|>|<=|>=                 return RELOP; /// need test
-\+|\-|\*|\\                     return BINOP; /// need test
+\+|\-|\*|\/                     return BINOP; /// need test
 \/\/[^\n\r]*                    return COMMENT; /// need test
 {letter}({letter}|{digit})*     return ID; /// need test
-0|([1-9]{digit}*)               {/* BEGIN(RIGHT_PAST_NUM); */return NUM; }
+0|([1-9]{digit}*)               return NUM;
 {whitespace}+                   ;
 \"                              { BEGIN(IN_STRING); }
 .                               { return ERROR; exit(0); }
 
 
 
-<IN_STRING>({string_chars}|{letter})*    { return STRING;}
-<IN_STRING>\"                    {BEGIN(INITIAL);}
+<IN_STRING>({string_chars}|{letter})*\"    { BEGIN(INITIAL); return STRING; }
 <IN_STRING>({string_chars}|{letter})*[\n\r]+              { return UNCLOSED_STR; }
-<IN_STRING>\\x[^\"]\"           { return ESCAPE; }
-<IN_STRING>\\x[^\"][^\"]        { return ESCAPE;   }
 <IN_STRING>({string_chars}|{letter})*\\[^rnt]             {return ESCAPE; }
 <IN_STRING>({string_chars}|{letter})*\\x(([^0-7][hex_digit])|([0-7][^hex_digit])|([^0-7][^hex_digit])) {return ESCAPE;}
-
-
-<IN_STRING>\\.                  { return ERROR; }
+<IN_STRING>.                  { return UNCLOSED_STR; }
 
 
 
